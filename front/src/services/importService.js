@@ -1,4 +1,4 @@
-// frontend/src/services/importService.js
+// src/services/importService.js
 import api from './api';
 
 /**
@@ -348,8 +348,8 @@ class ImportService {
   // ===========================================
 
   /**
-   * Arranca el mapeo automático (si tu backend lo soporta).
-   * POST /api/import/mapeo/{execution_id}?erp_hint=TXT/SAP|...
+   * Arranca el mapeo automático (genera sugerencias de dropdown).
+   * POST /api/import/mapeo/{execution_id}?erp_hint=...
    */
   async startAutomaticMapeo(executionId, erpHint) {
     try {
@@ -361,7 +361,7 @@ class ImportService {
         null,
         { params: erpHint ? { erp_hint: erpHint } : undefined }
       );
-      const result = { success: true, ...data };
+      const result = { success: true, data };
       this.requestCache.set(cacheKey, result);
       return result;
     } catch (e) {
@@ -377,16 +377,14 @@ class ImportService {
       const { data } = await api.get(
         `/api/import/mapeo/${encodeURIComponent(executionId)}/status`
       );
-      return { success: true, ...data };
+      return { success: true, data };
     } catch (e) {
       return { success: false, error: e?.response?.data?.detail || e.message };
     }
   }
 
   /**
-   * Obtiene el detalle del mapeo de campos.
    * GET /api/import/mapeo/{execution_id}/fields-mapping
-   * Devuelve el JSON tal cual (mapping_summary, mapped_fields, missing_fields)
    */
   async getFieldsMapping(executionId) {
     const cacheKey = `fields_mapping_${executionId}`;
@@ -395,20 +393,23 @@ class ImportService {
     const { data } = await api.get(
       `/api/import/mapeo/${encodeURIComponent(executionId)}/fields-mapping`
     );
-    // Normalizamos mínimos para evitar undefined en el front
+
     const normalized = {
+      execution_id: data?.execution_id,
       mapping_summary: data?.mapping_summary || {},
       mapped_fields: data?.mapped_fields || {},
       missing_fields: data?.missing_fields || [],
+      critical_missing: data?.critical_missing || [],
+      recommendations: data?.recommendations || [],
+      mapeo_stats: data?.mapeo_stats || {},
     };
     this.requestCache.set(cacheKey, normalized);
     return normalized;
   }
 
   /**
-   * Aplica mapeo manual y regenera archivos/preview en backend.
    * POST /api/import/mapeo/{execution_id}/apply-manual-mapping
-   * Body: { manual_mappings: { [dest_field]: "sourceColumn", ... } }
+   * Body: { manual_mappings: { [dest_field]: "sourceColumn" } }
    */
   async applyManualMapping(executionId, manualMappings) {
     try {
@@ -417,9 +418,9 @@ class ImportService {
         `/api/import/mapeo/${encodeURIComponent(executionId)}/apply-manual-mapping`,
         body
       );
-      // Invalida cache de mapeo para que el siguiente GET refresque
+      // Invalida cache de mapeo para refrescar
       this.requestCache.delete(`fields_mapping_${executionId}`);
-      return { success: true, ...data };
+      return { success: true, data };
     } catch (e) {
       return { success: false, error: e?.response?.data?.detail || e.message };
     }
@@ -542,6 +543,7 @@ class ImportService {
       formData.append('test_type', 'sumas_saldos_import');
       formData.append('parent_execution_id', parentExecutionId);
 
+    // 👇 mismo endpoint unificado
       const response = await api.post('/api/import/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
@@ -573,7 +575,6 @@ class ImportService {
   }
 
   async getImportHistory() {
-    // Placeholder; implementa si tu backend lo soporta
     return { success: true, executions: [] };
   }
 
