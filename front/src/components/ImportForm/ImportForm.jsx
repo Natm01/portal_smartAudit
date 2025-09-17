@@ -6,8 +6,8 @@ const ImportForm = ({ projects, onSubmit, loading }) => {
     projectId: '',
     fechaInicio: '',
     fechaFin: '',
-    libroDiarioFiles: [],   // Array de archivos
-    sumasSaldosFile: null,  // Ahora se sube si está presente
+    libroDiarioFiles: [],
+    sumasSaldosFile: null,
   });
   const [dragActive, setDragActive] = useState({ libroDiario: false, sumasSaldos: false });
   const [errors, setErrors] = useState({});
@@ -85,7 +85,7 @@ const ImportForm = ({ projects, onSubmit, loading }) => {
 
   const getFileTypeBadge = (filename) => {
     const extension = filename.split('.').pop().toLowerCase();
-    const colors = { 'txt': 'bg-blue-100 text-blue-600', 'csv': 'bg-orange-100 text-orange-600', 'xls': 'bg-green-100 text-green-600', 'xlsx': 'bg-green-100 text-green-600' };
+    const colors = { txt: 'bg-blue-100 text-blue-600', csv: 'bg-orange-100 text-orange-600', xls: 'bg-green-100 text-green-600', xlsx: 'bg-green-100 text-green-600' };
     return <span className={`px-1.5 py-0.5 text-xs font-medium rounded ${colors[extension] || 'bg-gray-100 text-gray-800'}`}>{extension.toUpperCase()}</span>;
   };
 
@@ -98,9 +98,8 @@ const ImportForm = ({ projects, onSubmit, loading }) => {
     if (formData.fechaInicio && formData.fechaFin && formData.fechaInicio > formData.fechaFin) {
       newErrors.fechaFin = 'La fecha de fin debe ser posterior a la fecha de inicio';
     }
-    if (formData.libroDiarioFiles.length === 0) {
-      newErrors.libroDiario = 'Debe seleccionar al menos un archivo de Libro Diario';
-    }
+    if (formData.libroDiarioFiles.length === 0) newErrors.libroDiario = 'Debe seleccionar al menos un archivo de Libro Diario';
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
@@ -112,10 +111,7 @@ const ImportForm = ({ projects, onSubmit, loading }) => {
   const handleDateChange = (field, value) => {
     if (value) {
       const parts = value.split('-');
-      if (parts[0] && parts[0].length > 4) {
-        parts[0] = parts[0].substring(0, 4);
-        value = parts.join('-');
-      }
+      if (parts[0] && parts[0].length > 4) { parts[0] = parts[0].substring(0, 4); value = parts.join('-'); }
       handleInputChange(field, value);
     }
   };
@@ -125,11 +121,11 @@ const ImportForm = ({ projects, onSubmit, loading }) => {
     const hasFiles = isMultiple ? files.length > 0 : files !== null;
     return (
       <div>
-        <label className="block text-xs font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-gray-700 mb-1">
           {label} {required && <span className="text-red-500">*</span>}
         </label>
         <div
-          className={`relative min-h-[120px] border-2 border-dashed rounded-lg transition-all ${
+          className={`relative min-h-[150px] border-2 border-dashed rounded-lg transition-all ${
             isDragging ? 'border-purple-400 bg-purple-50' : error ? 'border-red-300 bg-red-50' : 'border-gray-300 hover:border-purple-400 hover:bg-gray-50'
           }`}
           onDragEnter={(e) => handleDrag(e, type)}
@@ -153,9 +149,9 @@ const ImportForm = ({ projects, onSubmit, loading }) => {
               }
             }}
           />
-          <div className="p-3">
+          <div className="p-4">
             {!hasFiles ? (
-              <div className="flex flex-col items-center justify-center h-[80px] space-y-2">
+              <div className="flex flex-col items-center justify-center h-[100px] space-y-2">
                 <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                 </svg>
@@ -168,7 +164,7 @@ const ImportForm = ({ projects, onSubmit, loading }) => {
                 </div>
               </div>
             ) : (
-              <div className="space-y-2 max-h-[80px] overflow-y-auto">
+              <div className="space-y-2 max-h-[100px] overflow-y-auto">
                 {isMultiple ? (
                   files.map((file, index) => (
                     <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded-lg group hover:bg-gray-100 transition-colors">
@@ -177,7 +173,7 @@ const ImportForm = ({ projects, onSubmit, loading }) => {
                           <path d="M9 2a2 2 0 00-2 2v8a2 2 0 002 2h6a2 2 0 002-2V6.414A2 2 0 0016.414 5L14 2.586A2 2 0 0012.586 2H9z" />
                           <path d="M3 8a2 2 0 012-2v10h8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
                         </svg>
-                        <span className="text-xs text-gray-700 truncate">{file.name}</span>
+                        <span className="text-sm text-gray-700 truncate">{file.name}</span>
                         {getFileTypeBadge(file.name)}
                         <span className="text-xs text-gray-500">({(file.size / 1024).toFixed(1)} KB)</span>
                       </div>
@@ -195,7 +191,7 @@ const ImportForm = ({ projects, onSubmit, loading }) => {
                         <path d="M9 2a2 2 0 00-2 2v8a2 2 0 002 2h6a2 2 0 002-2V6.414A2 2 0 0016.414 5L14 2.586A2 2 0 0012.586 2H9z" />
                         <path d="M3 8a2 2 0 012-2v10h8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
                       </svg>
-                      <span className="text-xs text-gray-700 truncate">{files.name}</span>
+                      <span className="text-sm text-gray-700 truncate">{files.name}</span>
                       {getFileTypeBadge(files.name)}
                       <span className="text-xs text-gray-500">({(files.size / 1024).toFixed(1)} KB)</span>
                     </div>
@@ -216,19 +212,21 @@ const ImportForm = ({ projects, onSubmit, loading }) => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
       <div className="mb-3">
-        <h2 className="text-base font-semibold text-gray-900 mb-1">Formulario de Importación</h2>
-        <p className="text-xs text-gray-600">Complete los datos necesarios para procesar sus archivos contables</p>
+        <h2 className="text-lg font-semibold text-gray-900 mb-1">Formulario de Importación</h2>
+        <p className="text-sm text-gray-600">Complete los datos necesarios para procesar sus archivos contables</p>
       </div>
-      <form onSubmit={handleSubmit} className="space-y-3">
-        <div className="grid grid-cols-1 lg:grid-cols-8 gap-3">
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Proyecto + Fechas */}
+        <div className="grid grid-cols-1 lg:grid-cols-8 gap-4">
           <div className="lg:col-span-4">
-            <label className="block text-xs font-medium text-gray-700 mb-1">Proyecto <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Proyecto <span className="text-red-500">*</span></label>
             <select
               value={formData.projectId}
               onChange={(e) => handleInputChange('projectId', e.target.value)}
-              className={`w-full px-3 py-1.5 text-xs border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${errors.projectId ? 'border-red-300' : 'border-gray-300'}`}
+              className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${errors.projectId ? 'border-red-300' : 'border-gray-300'}`}
             >
               <option value="">Seleccionar proyecto...</option>
               {projects?.map((project) => (
@@ -239,7 +237,7 @@ const ImportForm = ({ projects, onSubmit, loading }) => {
           </div>
 
           <div className="lg:col-span-2">
-            <label className="block text-xs font-medium text-gray-700 mb-1">Fecha Inicio <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Fecha Inicio <span className="text-red-500">*</span></label>
             <input
               type="date"
               value={formData.fechaInicio || ''}
@@ -247,14 +245,14 @@ const ImportForm = ({ projects, onSubmit, loading }) => {
               onBlur={(e) => handleDateChange('fechaInicio', e.target.value)}
               min="1900-01-01"
               max="9999-12-31"
-              className={`w-full px-3 py-1.5 text-xs border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${errors.fechaInicio ? 'border-red-300' : 'border-gray-300'}`}
+              className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${errors.fechaInicio ? 'border-red-300' : 'border-gray-300'}`}
               placeholder="dd/mm/aaaa"
             />
             {errors.fechaInicio && <p className="text-xs text-red-600 mt-1">{errors.fechaInicio}</p>}
           </div>
 
           <div className="lg:col-span-2">
-            <label className="block text-xs font-medium text-gray-700 mb-1">Fecha Fin <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Fecha Fin <span className="text-red-500">*</span></label>
             <input
               type="date"
               value={formData.fechaFin || ''}
@@ -262,13 +260,14 @@ const ImportForm = ({ projects, onSubmit, loading }) => {
               onBlur={(e) => handleDateChange('fechaFin', e.target.value)}
               min="1900-01-01"
               max="9999-12-31"
-              className={`w-full px-3 py-1.5 text-xs border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${errors.fechaFin ? 'border-red-300' : 'border-gray-300'}`}
+              className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${errors.fechaFin ? 'border-red-300' : 'border-gray-300'}`}
               placeholder="dd/mm/aaaa"
             />
             {errors.fechaFin && <p className="text-xs text-red-600 mt-1">{errors.fechaFin}</p>}
           </div>
         </div>
 
+        {/* Dropzones */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <FileDropZone
             type="libroDiario"
@@ -278,7 +277,6 @@ const ImportForm = ({ projects, onSubmit, loading }) => {
             error={errors.libroDiario}
             required={true}
           />
-
           <FileDropZone
             type="sumasSaldos"
             label="Archivo Sumas y Saldos (opcional)"
@@ -289,6 +287,7 @@ const ImportForm = ({ projects, onSubmit, loading }) => {
           />
         </div>
 
+        {/* Acción */}
         <div className="flex justify-end pt-3 border-t border-gray-200">
           <button
             type="submit"

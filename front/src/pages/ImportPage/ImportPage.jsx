@@ -79,7 +79,7 @@ const ImportPage = () => {
     }
   };
 
-  // === Submit: subir LD + (SS si existe) y validar ambos ===
+  // Submit: subir LD + (SS si existe) - SIN validación automática aquí
   const handleImportSubmit = async ({ projectId, period, libroDiarioFiles, sumasSaldosFile }) => {
     try {
       setError(null);
@@ -91,8 +91,9 @@ const ImportPage = () => {
         executionId: null,
       });
 
-      // 1) Subir
+      // 1) Subir archivos con IDs coordinados
       const uploadRes = await importService.uploadLibroDiarioYSumas(libroDiarioFiles, sumasSaldosFile, projectId, period);
+      
       if (!uploadRes.success) {
         setStatusModal({
           open: true,
@@ -107,108 +108,30 @@ const ImportPage = () => {
       const executionIdLD = uploadRes.executionId;
       const executionIdSS = uploadRes.executionIdSS || null;
 
-      // Persistir relación SS->LD para la página de Validación
+      console.log('✅ Upload completed:', { 
+        LD: executionIdLD, 
+        SS: executionIdSS,
+        summary: uploadRes.summary 
+      });
+
+      // Persistir relación SS->LD para la página de Validación (si es necesario)
       if (executionIdLD && executionIdSS) {
-        try { sessionStorage.setItem(`ss_execution_for_${executionIdLD}`, executionIdSS); } catch {}
+        try { 
+          sessionStorage.setItem(`ss_execution_for_${executionIdLD}`, executionIdSS); 
+        } catch {}
       }
 
-      // 2) Validación de Libro Diario
+      // 2) Mostrar éxito y permitir ir a validación
+      const filesUploaded = uploadRes.summary?.totalFiles || (libroDiarioFiles.length + (sumasSaldosFile ? 1 : 0));
+      
       setStatusModal({
         open: true,
-        title: 'Archivo(s) subido(s) correctamente',
-        subtitle: 'Iniciando validación de Libro Diario…',
-        status: 'info',
+        title: '¡Archivos subidos correctamente!',
+        subtitle: `${filesUploaded} archivo${filesUploaded > 1 ? 's' : ''} subido${filesUploaded > 1 ? 's' : ''} con nombres coordinados. Listo para validación y conversión.`,
+        status: 'success',
         executionId: executionIdLD,
       });
 
-      const startValLD = await importService.startValidation(executionIdLD);
-      if (!startValLD.success) {
-        setStatusModal({
-          open: true,
-          title: 'Error al iniciar validación de Libro Diario',
-          subtitle: startValLD.error || 'Intenta validar desde la página de Validación.',
-          status: 'error',
-          executionId: executionIdLD,
-        });
-        return;
-      }
-
-      setStatusModal({
-        open: true,
-        title: 'Validando…',
-        subtitle: 'Libro Diario en proceso de validación.',
-        status: 'loading',
-        executionId: executionIdLD,
-      });
-
-      const pollLD = await importService.pollValidationStatus(executionIdLD, { intervalMs: 1200, timeoutMs: 180000 });
-
-      // 3) Si hay Sumas y Saldos, validar también
-      if (executionIdSS) {
-        await importService.startValidation(executionIdSS);
-
-        setStatusModal({
-          open: true,
-          title: pollLD.success ? 'Libro Diario validado' : 'Libro Diario no validado',
-          subtitle: 'Iniciando validación de Sumas y Saldos…',
-          status: pollLD.success ? 'info' : 'error',
-          executionId: executionIdLD,
-        });
-
-        const pollSS = await importService.pollValidationStatus(executionIdSS, { intervalMs: 1200, timeoutMs: 180000 });
-
-        if (pollLD.success && pollSS.success) {
-          setStatusModal({
-            open: true,
-            title: '¡Archivos validados!',
-            subtitle: 'Libro Diario y Sumas y Saldos validados correctamente.',
-            status: 'success',
-            executionId: executionIdLD,
-          });
-        } else if (pollLD.success && !pollSS.success) {
-          setStatusModal({
-            open: true,
-            title: 'Libro Diario validado • Sumas y Saldos con problemas',
-            subtitle: pollSS.error || `Estado SS: ${pollSS.finalStatus || 'desconocido'}`,
-            status: 'error',
-            executionId: executionIdLD,
-          });
-        } else if (!pollLD.success && pollSS.success) {
-          setStatusModal({
-            open: true,
-            title: 'Sumas y Saldos validado • Libro Diario con problemas',
-            subtitle: pollLD.error || `Estado LD: ${pollLD.finalStatus || 'desconocido'}`,
-            status: 'error',
-            executionId: executionIdLD,
-          });
-        } else {
-          setStatusModal({
-            open: true,
-            title: 'Validaciones incompletas',
-            subtitle: `LD: ${pollLD.finalStatus || 'error'} • SS: ${pollSS.finalStatus || 'error'}`,
-            status: 'error',
-            executionId: executionIdLD,
-          });
-        }
-      } else {
-        if (pollLD.success) {
-          setStatusModal({
-            open: true,
-            title: '¡Archivo validado!',
-            subtitle: 'Libro Diario validado correctamente.',
-            status: 'success',
-            executionId: executionIdLD,
-          });
-        } else {
-          setStatusModal({
-            open: true,
-            title: 'La validación no se completó',
-            subtitle: pollLD.error || `Estado final: ${pollLD.finalStatus || 'desconocido'}`,
-            status: 'error',
-            executionId: executionIdLD,
-          });
-        }
-      }
     } catch (err) {
       console.error('handleImportSubmit error:', err);
       setStatusModal({
@@ -244,7 +167,7 @@ const ImportPage = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Header user={user} onUserChange={handleUserChange} />
-      {/* Mantener proporciones originales */}
+      
       <main className="flex-1">
         <div className="max-w-full mx-auto px-6 sm:px-8 lg:px-12 xl:px-16 py-8">
           {/* Breadcrumb */}
@@ -283,7 +206,7 @@ const ImportPage = () => {
               <div className="flex-1 h-px bg-gray-200 mx-4"></div>
               <div className="flex items-center text-gray-400">
                 <div className="flex items-center justify-center w-8 h-8 border-2 border-gray-300 rounded-full text-sm font-medium">2</div>
-                <span className="ml-2 text-sm font-medium">Validación</span>
+                <span className="ml-2 text-sm font-medium">Validación y Conversión</span>
               </div>
               <div className="flex-1 h-px bg-gray-200 mx-4"></div>
               <div className="flex items-center text-gray-400">
@@ -304,7 +227,7 @@ const ImportPage = () => {
             </div>
           )}
 
-          {/* === Layout apilado: Formulario y debajo Historial === */}
+          {/* Layout: Formulario y Historial */}
           <div className="space-y-6">
             <ImportForm projects={projects} onSubmit={handleImportSubmit} loading={false} />
             <ImportHistory executions={importHistory} onItemClick={handleHistoryItemClick} loading={false} />
@@ -343,7 +266,7 @@ const ImportPage = () => {
               }}
               className="px-3 py-1.5 rounded-lg text-xs font-medium bg-purple-600 text-white hover:bg-purple-700"
             >
-              Ir a Validación
+              Ir a Validación y Conversión
             </button>
           </div>
         ) : null}
