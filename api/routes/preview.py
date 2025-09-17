@@ -12,7 +12,7 @@ from services.execution_service import get_execution_service
 from services.storage.azure_storage_service import get_azure_storage_service
 from config.settings import get_settings
 
-router = APIRouter()
+router = APIRouter(prefix="/smau-proto/api/import", tags=["preview"])
 
 @router.get("/preview/{execution_id}")
 async def get_preview(execution_id: str, rows: int = Query(10, description="Number of rows to preview")):

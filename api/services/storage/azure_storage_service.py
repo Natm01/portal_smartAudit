@@ -1,3 +1,4 @@
+# api/services/storage/azure_storage_service.py
 import os
 import io
 import logging
@@ -54,26 +55,55 @@ class AzureStorageService:
                 logger.error(f"Error creating container {container_name}: {e}")
                 raise
     
-    def _get_blob_name(self, file_path: str, execution_id: Optional[str] = None) -> str:
-        """Generate blob name from file path"""
-        path = Path(file_path)
-        filename = path.name
+    def _get_blob_name(self, file_path: str, execution_id: Optional[str] = None, 
+                      file_type: Optional[str] = None) -> str:
+        """
+        Generate structured blob name: execution_id_filename_filetype.extension
         
-        if execution_id:
-            stem = path.stem
-            suffix = path.suffix
+        Args:
+            file_path: Original file path/name
+            execution_id: Execution identifier
+            file_type: "Je" for Journal Entries (Libro Diario), "Sys" for Sumas y Saldos
+        
+        Returns:
+            Structured blob name
+        """
+        path = Path(file_path)
+        original_filename = path.stem  # Filename without extension
+        extension = path.suffix  # .txt, .csv, .xlsx, etc.
+        
+        if execution_id and file_type:
+            # Usar ID base (sin -ss) para que ambos archivos tengan el mismo prefijo
+            base_execution_id = execution_id.replace('-ss', '') if execution_id.endswith('-ss') else execution_id
+            # Estructura: baseExecutionId_NombreArchivo_TipoArchivo.extensión
+            blob_name = f"{base_execution_id}_{original_filename}_{file_type}{extension}"
+        elif execution_id:
+            # Fallback: executionId_filename.extension
+            base_execution_id = execution_id.replace('-ss', '') if execution_id.endswith('-ss') else execution_id
             timestamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
-            return f"{execution_id}_{stem}_{timestamp}{suffix}"
+            blob_name = f"{base_execution_id}_{original_filename}_{timestamp}{extension}"
         else:
+            # Fallback sin execution_id
             timestamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
-            stem = path.stem
-            suffix = path.suffix
-            return f"{stem}_{timestamp}{suffix}"
+            blob_name = f"{original_filename}_{timestamp}{extension}"
+        
+        logger.info(f"Generated blob name: {blob_name} (from: {file_path}, execution_id: {execution_id})")
+        return blob_name
     
     def upload_file_chunked(self, local_path: str, container_type: str = "upload", 
                            execution_id: Optional[str] = None, 
+                           file_type: Optional[str] = None,
                            progress_callback=None) -> str:
-        """Upload file using chunked upload for large files"""
+        """
+        Upload file using chunked upload for large files with structured naming
+        
+        Args:
+            local_path: Path to local file
+            container_type: Type of container (upload, results, etc.)
+            execution_id: Execution identifier for structured naming
+            file_type: "Je" for Journal Entries, "Sys" for Sumas y Saldos
+            progress_callback: Progress callback function
+        """
         try:
             if not os.path.exists(local_path):
                 raise FileNotFoundError(f"Local file not found: {local_path}")
@@ -82,7 +112,7 @@ class AzureStorageService:
             logger.info(f"Uploading file {local_path} (size: {file_size:,} bytes)")
             
             container_name = self.containers.get(container_type, "upload")
-            blob_name = self._get_blob_name(local_path, execution_id)
+            blob_name = self._get_blob_name(local_path, execution_id, file_type)
             
             blob_client = self.blob_service_client.get_blob_client(
                 container=container_name, 
@@ -117,11 +147,21 @@ class AzureStorageService:
     
     def upload_from_memory(self, file_data: bytes, filename: str, 
                           container_type: str = "upload", 
-                          execution_id: Optional[str] = None) -> str:
-        """Upload file from memory with optimization for large data"""
+                          execution_id: Optional[str] = None,
+                          file_type: Optional[str] = None) -> str:
+        """
+        Upload file from memory with structured naming
+        
+        Args:
+            file_data: File data as bytes
+            filename: Original filename
+            container_type: Type of container
+            execution_id: Execution identifier for structured naming
+            file_type: "Je" for Journal Entries, "Sys" for Sumas y Saldos
+        """
         try:
             container_name = self.containers.get(container_type, "upload")
-            blob_name = self._get_blob_name(filename, execution_id)
+            blob_name = self._get_blob_name(filename, execution_id, file_type)
             content_type = self._get_content_type(filename)
             
             blob_client = self.blob_service_client.get_blob_client(
@@ -150,6 +190,50 @@ class AzureStorageService:
         except Exception as e:
             logger.error(f"Error uploading file from memory {filename}: {e}")
             raise
+    
+    def upload_libro_diario_file(self, file_data: bytes, original_filename: str, 
+                                execution_id: str, container_type: str = "upload") -> str:
+        """
+        Upload Libro Diario file with 'Je' type identifier
+        
+        Args:
+            file_data: File data as bytes
+            original_filename: Original filename
+            execution_id: Execution identifier
+            container_type: Container type
+        
+        Returns:
+            Azure blob URL
+        """
+        return self.upload_from_memory(
+            file_data=file_data,
+            filename=original_filename,
+            container_type=container_type,
+            execution_id=execution_id,
+            file_type="Je"  # Journal Entries
+        )
+    
+    def upload_sumas_saldos_file(self, file_data: bytes, original_filename: str, 
+                                execution_id: str, container_type: str = "upload") -> str:
+        """
+        Upload Sumas y Saldos file with 'Sys' type identifier
+        
+        Args:
+            file_data: File data as bytes
+            original_filename: Original filename
+            execution_id: Execution identifier
+            container_type: Container type
+        
+        Returns:
+            Azure blob URL
+        """
+        return self.upload_from_memory(
+            file_data=file_data,
+            filename=original_filename,
+            container_type=container_type,
+            execution_id=execution_id,
+            file_type="Sys"  # Sumas y Saldos
+        )
     
     def download_file(self, blob_url: str, local_path: str = None, 
                      progress_callback=None) -> str:

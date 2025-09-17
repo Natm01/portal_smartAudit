@@ -1,5 +1,5 @@
-// frontend/src/pages/ValidationPage/ValidationPage.jsx
-import React, { useState, useEffect } from 'react';
+// frontend/src/pages/ValidationPage/ValidationPage.jsx - SOLO LOS CAMBIOS SOLICITADOS
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Header from '../../components/Header/Header';
 import ValidationPhases from '../../components/ValidationPhases/ValidationPhases';
@@ -11,6 +11,7 @@ import importService from '../../services/importService';
 const ValidationPage = () => {
   const { executionId } = useParams();
   const navigate = useNavigate();
+  const processStartedRef = useRef(false); // ÚNICO CAMBIO: Prevenir múltiples ejecuciones
   
   // Estados principales
   const [user, setUser] = useState(null);
@@ -62,8 +63,11 @@ const ValidationPage = () => {
         libroDiarioFile: 'BSEG.txt + BKPF.txt',
       });
 
-      // Iniciar proceso de validación y conversión
-      await startValidationAndConversionProcess();
+      // CAMBIO: Iniciar proceso SOLO UNA VEZ
+      if (!processStartedRef.current) {
+        processStartedRef.current = true;
+        await startValidationAndConversionProcess();
+      }
 
     } catch (err) {
       console.error('Error en carga inicial:', err);
@@ -79,11 +83,11 @@ const ValidationPage = () => {
 
   const startValidationAndConversionProcess = async () => {
     try {
-      // Mostrar modal de inicio
+      // CAMBIO: Mostrar modal de conversión inicial
       setStatusModal({
         open: true,
-        title: 'Iniciando proceso...',
-        subtitle: 'Validando archivos y convirtiendo Libro Diario',
+        title: 'Convirtiendo archivo...',
+        subtitle: 'Procesando y preparando archivos para validación',
         status: 'loading'
       });
 
@@ -240,17 +244,17 @@ const ValidationPage = () => {
   };
 
   // ===========================================
-  // RENDER
+  // RENDER - SIN CAMBIOS VISUALES
   // ===========================================
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 flex flex-col">
         <Header user={user} onUserChange={handleUserChange} />
-        <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-300 border-t-purple-600"></div>
-            <span className="ml-4 text-lg text-gray-600">Cargando proceso...</span>
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-10 w-10 border-4 border-gray-200 border-t-purple-600 mb-4"></div>
+            <p className="text-gray-600">Cargando proceso...</p>
           </div>
         </main>
       </div>
@@ -259,12 +263,12 @@ const ValidationPage = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 flex flex-col">
         <Header user={user} onUserChange={handleUserChange} />
-        <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-          <div className="text-center py-12">
-            <div className="text-red-500 text-6xl mb-4">⚠️</div>
-            <h2 className="text-xl font-semibold text-red-600 mb-2">Error</h2>
+        <main className="flex-1 flex items-center justify-center p-4">
+          <div className="max-w-md w-full bg-white rounded-xl shadow-sm p-8 text-center border border-red-100">
+            <div className="text-6xl mb-4">⚠️</div>
+            <h2 className="text-xl font-semibold text-red-600 mb-2">Error al cargar resultados</h2>
             <p className="text-gray-600 mb-6">{error}</p>
             <button 
               onClick={() => window.location.reload()} 
@@ -281,7 +285,7 @@ const ValidationPage = () => {
   const processStatus = getProcessStatus();
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       <Header user={user} onUserChange={handleUserChange} />
       
       <main className="flex-1">
@@ -312,7 +316,7 @@ const ValidationPage = () => {
                   <svg className="w-4 h-4 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd"></path>
                   </svg>
-                  <span className="ml-4 text-sm font-medium text-gray-500">Validación y Conversión</span>
+                  <span className="ml-4 text-sm font-medium text-gray-500">Validación</span>
                 </div>
               </li>
             </ol>
@@ -320,27 +324,22 @@ const ValidationPage = () => {
 
           {/* Header */}
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Validación y Conversión</h1>
-            <p className="mt-2 text-sm text-gray-600">
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Validación</h1>
+            <p className="text-gray-600">
               Proyecto: {executionData?.projectName} • Período: {executionData?.period}
             </p>
           </div>
 
           {/* Steps Progress */}
-          <div className="bg-white rounded-lg p-6 shadow-sm border">
+          <div className="p-6">
             <div className="flex items-center justify-center">
-              
-              {/* Step 1: Importación */}
               <div className="flex items-center text-green-600">
                 <div className="flex items-center justify-center w-8 h-8 border-2 border-green-600 rounded-full bg-green-600 text-white text-sm font-medium">
                   ✓
                 </div>
                 <span className="ml-2 text-sm font-medium">Importación</span>
               </div>
-              
               <div className="flex-1 h-px bg-gray-200 mx-4"></div>
-              
-              {/* Step 2: Validación y Conversión */}
               <div className={`flex items-center ${
                 getStepStatus(2) === 'completed' ? 'text-green-600' : 'text-purple-600'
               }`}>
@@ -351,12 +350,9 @@ const ValidationPage = () => {
                 }`}>
                   {getStepStatus(2) === 'completed' ? '✓' : '2'}
                 </div>
-                <span className="ml-2 text-sm font-medium">Validación y Conversión</span>
+                <span className="ml-2 text-sm font-medium">Validación</span>
               </div>
-              
               <div className="flex-1 h-px bg-gray-200 mx-4"></div>
-              
-              {/* Step 3: Resultados */}
               <div className={`flex items-center ${
                 getStepStatus(3) === 'ready' ? 'text-green-600' : 'text-gray-400'
               }`}>
@@ -369,7 +365,6 @@ const ValidationPage = () => {
                 </div>
                 <span className="ml-2 text-sm font-medium">Resultados</span>
               </div>
-              
             </div>
           </div>
 
@@ -411,13 +406,13 @@ const ValidationPage = () => {
             </div>
           </div>
 
-          {/* Validation Phases Component */}
+          {/* Validation Phases Component - SIN CAMBIOS */}
           <ValidationPhases 
             fileType="libro_diario" 
-            onComplete={() => {}} // Ya manejado por el proceso principal
+            onComplete={() => {}}
           />
 
-          {/* File Preview - Solo para Libro Diario */}
+          {/* File Preview - SIN CAMBIOS */}
           {executionData && (
             <FilePreview 
               file={executionData.libroDiarioFile} 

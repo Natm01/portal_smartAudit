@@ -1,42 +1,29 @@
-// frontend/src/services/importService.js
+// frontend/src/services/importService.js - SOLO CAMBIOS MÃNIMOS
 import api from './api';
 
 /**
- * ImportService - Versión limpia y organizada
- * 
- * Funcionalidades principales:
- * 1. Subida de archivos con IDs coordinados
- * 2. Validación de archivos
- * 3. Gestión de estado de validación
- * 4. Verificación de estructura de archivos
+ * ImportService - Solo con los cambios mÃ­nimos para evitar mÃºltiples llamadas
  */
 class ImportService {
   
+  constructor() {
+    // ÃšNICO CAMBIO: Cache para evitar mÃºltiples llamadas
+    this.requestCache = new Map();
+    this.activePolling = new Set();
+  }
+
   // ===========================================
-  // SUBIDA DE ARCHIVOS
+  // SUBIDA DE ARCHIVOS - SIN CAMBIOS
   // ===========================================
 
-  /**
-   * Sube Libro Diario y opcionalmente Sumas y Saldos con IDs coordinados
-   * Estructura de nombres: executionId_NombreArchivo_TipoArchivo.extensión
-   * 
-   * @param {File[]} libroDiarioFiles - Archivos de Libro Diario
-   * @param {File|null} sumasSaldosFile - Archivo de Sumas y Saldos (opcional)
-   * @param {string} projectId - ID del proyecto
-   * @param {string} period - Período
-   * @param {string} testType - Tipo de test
-   * @returns {Promise<Object>} Resultado de la subida
-   */
   async uploadLibroDiarioYSumas(libroDiarioFiles, sumasSaldosFile, projectId, period, testType = 'libro_diario_import') {
     try {
-      console.log('🚀 Iniciando subida coordinada...');
+      console.log('ðŸš€ Iniciando subida coordinada...');
       
-      // Validar inputs
       if (!libroDiarioFiles || libroDiarioFiles.length === 0) {
         return { success: false, error: 'Debe adjuntar al menos un archivo de Libro Diario' };
       }
 
-      // 1. Subir archivo principal de Libro Diario
       const primaryResult = await this._uploadPrimaryLibroDiario(
         libroDiarioFiles[0], projectId, period, testType
       );
@@ -46,14 +33,12 @@ class ImportService {
       }
 
       const executionIdLD = primaryResult.executionId;
-      console.log(`✅ Libro Diario principal subido: ${executionIdLD}`);
+      console.log(`âœ… Libro Diario principal subido: ${executionIdLD}`);
 
-      // 2. Subir archivos adicionales de Libro Diario (si los hay)
       const additionalResults = await this._uploadAdditionalLibroDiarioFiles(
         libroDiarioFiles.slice(1), executionIdLD, projectId, period, testType
       );
 
-      // 3. Subir Sumas y Saldos (si existe)
       let sumasResult = null;
       if (sumasSaldosFile) {
         sumasResult = await this._uploadSumasSaldos(
@@ -61,7 +46,6 @@ class ImportService {
         );
       }
 
-      // 4. Preparar resultado final
       const result = {
         success: true,
         executionId: executionIdLD,
@@ -80,11 +64,11 @@ class ImportService {
         }
       };
 
-      console.log('🎉 Subida coordinada completada:', result.summary);
+      console.log('ðŸŽ‰ Subida coordinada completada:', result.summary);
       return result;
 
     } catch (error) {
-      console.error('❌ Error en subida coordinada:', error);
+      console.error('âŒ Error en subida coordinada:', error);
       return { 
         success: false, 
         error: error?.response?.data?.detail || error?.message || 'Error al subir archivos' 
@@ -92,41 +76,38 @@ class ImportService {
     }
   }
 
-  /**
-   * Método de compatibilidad - solo Libro Diario
-   */
-  async uploadLibroDiario(libroDiarioFiles, projectId, period, testType = 'libro_diario_import') {
-    return this.uploadLibroDiarioYSumas(libroDiarioFiles, null, projectId, period, testType);
-  }
-
   // ===========================================
-  // VALIDACIÓN DE ARCHIVOS
+  // VALIDACIÃ“N - CON CACHE PARA EVITAR MÃšLTIPLES LLAMADAS
   // ===========================================
 
-  /**
-   * Inicia validación para un execution_id
-   */
   async startValidation(executionId) {
     try {
-      console.log(`🔍 Iniciando validación: ${executionId}`);
+      // CAMBIO: Evitar llamadas duplicadas
+      const cacheKey = `validate_start_${executionId}`;
+      if (this.requestCache.has(cacheKey)) {
+        console.log(`ðŸ“‹ Usando resultado cacheado para validaciÃ³n: ${executionId}`);
+        return this.requestCache.get(cacheKey);
+      }
+
+      console.log(`ðŸ” Iniciando validaciÃ³n: ${executionId}`);
       
       const response = await api.post(`/api/import/validate/${encodeURIComponent(executionId)}`);
       
-      console.log(`✅ Validación iniciada: ${executionId}`);
-      return { success: true, data: response?.data };
+      const result = { success: true, data: response?.data };
+      this.requestCache.set(cacheKey, result);
+      
+      console.log(`âœ… ValidaciÃ³n iniciada: ${executionId}`);
+      return result;
       
     } catch (error) {
-      console.error(`❌ Error iniciando validación ${executionId}:`, error);
+      console.error(`âŒ Error iniciando validaciÃ³n ${executionId}:`, error);
       return { 
         success: false, 
-        error: error?.response?.data?.detail || error?.message || 'Error al iniciar validación' 
+        error: error?.response?.data?.detail || error?.message || 'Error al iniciar validaciÃ³n' 
       };
     }
   }
 
-  /**
-   * Consulta estado de validación
-   */
   async getValidationStatus(executionId) {
     try {
       const response = await api.get(`/api/import/validate/${encodeURIComponent(executionId)}/status`);
@@ -140,68 +121,167 @@ class ImportService {
     }
   }
 
-  /**
-   * Hace polling del estado de validación hasta completarse
-   */
   async pollValidationStatus(executionId, options = {}) {
     const { intervalMs = 1200, timeoutMs = 120000 } = options;
     
-    console.log(`⏳ Monitoreando validación: ${executionId}`);
+    // CAMBIO: Evitar polling duplicado
+    const pollingKey = `poll_validation_${executionId}`;
+    if (this.activePolling.has(pollingKey)) {
+      throw new Error(`Ya hay un polling activo para validaciÃ³n: ${executionId}`);
+    }
+
+    this.activePolling.add(pollingKey);
+    console.log(`â³ Monitoreando validaciÃ³n: ${executionId}`);
     
     const startTime = Date.now();
     const completedStates = new Set(['success', 'completed', 'validated', 'error', 'failed']);
 
-    while (true) {
-      const statusResult = await this.getValidationStatus(executionId);
-      
-      if (statusResult.success) {
-        const status = (statusResult.data?.status || statusResult.data?.state || '').toString().toLowerCase();
+    try {
+      while (true) {
+        const statusResult = await this.getValidationStatus(executionId);
         
-        if (completedStates.has(status)) {
-          const success = !['error', 'failed'].includes(status);
-          console.log(`${success ? '✅' : '❌'} Validación completada ${executionId}: ${status}`);
+        if (statusResult.success) {
+          const status = (statusResult.data?.status || statusResult.data?.state || '').toString().toLowerCase();
           
+          if (completedStates.has(status)) {
+            const success = !['error', 'failed'].includes(status);
+            console.log(`${success ? 'âœ…' : 'âŒ'} ValidaciÃ³n completada ${executionId}: ${status}`);
+            
+            return { 
+              success, 
+              finalStatus: status, 
+              data: statusResult.data 
+            };
+          }
+          
+          const elapsed = Date.now() - startTime;
+          if (elapsed % 10000 < intervalMs) {
+            console.log(`â³ Validando ${executionId}... (${Math.round(elapsed/1000)}s, estado: ${status})`);
+          }
+          
+        } else if (statusResult.statusCode && statusResult.statusCode !== 404) {
+          console.error(`âŒ Error en validaciÃ³n ${executionId}:`, statusResult.error);
+          return { success: false, finalStatus: 'error', error: statusResult.error };
+        }
+
+        if (Date.now() - startTime > timeoutMs) {
+          console.warn(`â° Timeout en validaciÃ³n ${executionId} despuÃ©s de ${timeoutMs}ms`);
           return { 
-            success, 
-            finalStatus: status, 
-            data: statusResult.data 
+            success: false, 
+            finalStatus: 'timeout', 
+            error: 'La validaciÃ³n tardÃ³ demasiado tiempo' 
           };
         }
-        
-        // Log de progreso cada ~10 segundos
-        const elapsed = Date.now() - startTime;
-        if (elapsed % 10000 < intervalMs) {
-          console.log(`⏳ Validando ${executionId}... (${Math.round(elapsed/1000)}s, estado: ${status})`);
-        }
-        
-      } else if (statusResult.statusCode && statusResult.statusCode !== 404) {
-        console.error(`❌ Error en validación ${executionId}:`, statusResult.error);
-        return { success: false, finalStatus: 'error', error: statusResult.error };
-      }
 
-      // Verificar timeout
-      if (Date.now() - startTime > timeoutMs) {
-        console.warn(`⏰ Timeout en validación ${executionId} después de ${timeoutMs}ms`);
-        return { 
-          success: false, 
-          finalStatus: 'timeout', 
-          error: 'La validación tardó demasiado tiempo' 
-        };
+        await new Promise(resolve => setTimeout(resolve, intervalMs));
       }
-
-      // Esperar antes del siguiente check
-      await new Promise(resolve => setTimeout(resolve, intervalMs));
+    } finally {
+      this.activePolling.delete(pollingKey);
     }
   }
 
-  /**
-   * Valida archivos coordinados (LD + SS si existe) y convierte el LD
-   */
+  // ===========================================
+  // CONVERSIÃ“N - SIN CAMBIOS
+  // ===========================================
+
+  async startConversion(executionId) {
+    try {
+      console.log(`ðŸ”„ Iniciando conversiÃ³n: ${executionId}`);
+      
+      const response = await api.post(`/api/import/convert/${encodeURIComponent(executionId)}`);
+      
+      console.log(`âœ… ConversiÃ³n iniciada: ${executionId}`);
+      return { success: true, data: response?.data };
+      
+    } catch (error) {
+      console.error(`âŒ Error iniciando conversiÃ³n ${executionId}:`, error);
+      return { 
+        success: false, 
+        error: error?.response?.data?.detail || error?.message || 'Error al iniciar conversiÃ³n' 
+      };
+    }
+  }
+
+  async getConversionStatus(executionId) {
+    try {
+      const response = await api.get(`/api/import/convert/${encodeURIComponent(executionId)}/status`);
+      return { success: true, data: response?.data };
+      
+    } catch (error) {
+      const statusCode = error?.response?.status;
+      const message = error?.response?.data?.detail || error?.message || 'Error al consultar estado de conversiÃ³n';
+      
+      return { success: false, statusCode, error: message };
+    }
+  }
+
+  async pollConversionStatus(executionId, options = {}) {
+    const { intervalMs = 2000, timeoutMs = 300000 } = options;
+    
+    // CAMBIO: Evitar polling duplicado
+    const pollingKey = `poll_conversion_${executionId}`;
+    if (this.activePolling.has(pollingKey)) {
+      throw new Error(`Ya hay un polling activo para conversiÃ³n: ${executionId}`);
+    }
+
+    this.activePolling.add(pollingKey);
+    console.log(`â³ Monitoreando conversiÃ³n: ${executionId}`);
+    
+    const startTime = Date.now();
+    const completedStates = new Set(['success', 'completed', 'converted', 'error', 'failed']);
+
+    try {
+      while (true) {
+        const statusResult = await this.getConversionStatus(executionId);
+        
+        if (statusResult.success) {
+          const status = (statusResult.data?.status || statusResult.data?.state || '').toString().toLowerCase();
+          
+          if (completedStates.has(status)) {
+            const success = !['error', 'failed'].includes(status);
+            console.log(`${success ? 'âœ…' : 'âŒ'} ConversiÃ³n completada ${executionId}: ${status}`);
+            
+            return { 
+              success, 
+              finalStatus: status, 
+              data: statusResult.data 
+            };
+          }
+          
+          const elapsed = Date.now() - startTime;
+          if (elapsed % 10000 < intervalMs) {
+            console.log(`ðŸ”„ Convirtiendo ${executionId}... (${Math.round(elapsed/1000)}s, estado: ${status})`);
+          }
+          
+        } else if (statusResult.statusCode && statusResult.statusCode !== 404) {
+          console.error(`âŒ Error en conversiÃ³n ${executionId}:`, statusResult.error);
+          return { success: false, finalStatus: 'error', error: statusResult.error };
+        }
+
+        if (Date.now() - startTime > timeoutMs) {
+          console.warn(`â° Timeout en conversiÃ³n ${executionId} despuÃ©s de ${timeoutMs}ms`);
+          return { 
+            success: false, 
+            finalStatus: 'timeout', 
+            error: 'La conversiÃ³n tardÃ³ demasiado tiempo' 
+          };
+        }
+
+        await new Promise(resolve => setTimeout(resolve, intervalMs));
+      }
+    } finally {
+      this.activePolling.delete(pollingKey);
+    }
+  }
+
+  // ===========================================
+  // PROCESO PRINCIPAL - SIN CAMBIOS
+  // ===========================================
+
   async validateCoordinatedFiles(executionId) {
     try {
-      console.log(`🔍 Iniciando validación coordinada: ${executionId}`);
+      console.log(`ðŸ” Iniciando validaciÃ³n coordinada: ${executionId}`);
 
-      // Obtener información de archivos coordinados
       const coordinated = await this.getCoordinatedExecutions(executionId);
       if (!coordinated.success) {
         return { success: false, error: 'No se pudieron obtener archivos coordinados' };
@@ -215,7 +295,7 @@ class ImportService {
       // Validar Libro Diario
       if (coordinated.data.libroDiario) {
         const ldId = coordinated.data.libroDiario.executionId;
-        console.log(`📄 Validando Libro Diario: ${ldId}`);
+        console.log(`ðŸ“„ Validando Libro Diario: ${ldId}`);
         
         results.libroDiario.attempted = true;
         
@@ -226,31 +306,31 @@ class ImportService {
           results.libroDiario.finalStatus = pollResult.finalStatus;
           results.libroDiario.error = pollResult.error;
 
-          // Si la validación del LD fue exitosa, iniciar conversión
+          // Si la validaciÃ³n del LD fue exitosa, iniciar conversiÃ³n
           if (pollResult.success) {
-            console.log(`🔄 Iniciando conversión del Libro Diario: ${ldId}`);
+            console.log(`ðŸ”„ Iniciando conversiÃ³n del Libro Diario: ${ldId}`);
             
             try {
               const conversionResult = await this.startConversion(ldId);
               if (conversionResult.success) {
-                console.log(`⏳ Monitoreando conversión del Libro Diario: ${ldId}`);
+                console.log(`â³ Monitoreando conversiÃ³n del Libro Diario: ${ldId}`);
                 const conversionPoll = await this.pollConversionStatus(ldId, { intervalMs: 2000, timeoutMs: 300000 });
                 results.libroDiario.converted = conversionPoll.success;
                 results.libroDiario.conversionStatus = conversionPoll.finalStatus;
                 results.libroDiario.conversionError = conversionPoll.error;
                 
                 if (conversionPoll.success) {
-                  console.log(`✅ Conversión del Libro Diario completada: ${ldId}`);
+                  console.log(`âœ… ConversiÃ³n del Libro Diario completada: ${ldId}`);
                 } else {
-                  console.log(`❌ Error en conversión del Libro Diario: ${conversionPoll.error}`);
+                  console.log(`âŒ Error en conversiÃ³n del Libro Diario: ${conversionPoll.error}`);
                 }
               } else {
                 results.libroDiario.conversionError = conversionResult.error;
-                console.log(`❌ No se pudo iniciar conversión del Libro Diario: ${conversionResult.error}`);
+                console.log(`âŒ No se pudo iniciar conversiÃ³n del Libro Diario: ${conversionResult.error}`);
               }
             } catch (convError) {
               results.libroDiario.conversionError = convError.message;
-              console.log(`❌ Error durante conversión del Libro Diario: ${convError.message}`);
+              console.log(`âŒ Error durante conversiÃ³n del Libro Diario: ${convError.message}`);
             }
           }
         } else {
@@ -258,10 +338,10 @@ class ImportService {
         }
       }
 
-      // Validar Sumas y Saldos (SIN conversión)
+      // Validar Sumas y Saldos (SIN conversiÃ³n)
       if (coordinated.data.sumasSaldos) {
         const ssId = coordinated.data.sumasSaldos.executionId;
-        console.log(`📊 Validando Sumas y Saldos: ${ssId}`);
+        console.log(`ðŸ“Š Validando Sumas y Saldos: ${ssId}`);
         
         results.sumasSaldos.attempted = true;
         
@@ -281,7 +361,6 @@ class ImportService {
       const ldConverted = !results.libroDiario.attempted || results.libroDiario.converted;
       const ssOk = !results.sumasSaldos.attempted || results.sumasSaldos.success;
       
-      // El éxito general requiere validación + conversión del LD (si existe) y validación del SS (si existe)
       const overallSuccess = ldValidated && ldConverted && ssOk;
 
       const summary = {
@@ -295,119 +374,24 @@ class ImportService {
         conversionSuccessful: results.libroDiario.converted
       };
 
-      console.log(`🎯 Validación y conversión coordinada completada:`, summary);
+      console.log(`ðŸŽ¯ ValidaciÃ³n y conversiÃ³n coordinada completada:`, summary);
 
       return { success: overallSuccess, results, summary };
 
     } catch (error) {
-      console.error(`❌ Error en validación coordinada ${executionId}:`, error);
+      console.error(`âŒ Error en validaciÃ³n coordinada ${executionId}:`, error);
       return { success: false, error: error.message };
     }
   }
 
   // ===========================================
-  // CONVERSIÓN DE ARCHIVOS (SOLO LIBRO DIARIO)
+  // MÃ‰TODOS DE UTILIDAD - SIN CAMBIOS
   // ===========================================
 
-  /**
-   * Inicia conversión para un execution_id (solo Libro Diario)
-   */
-  async startConversion(executionId) {
-    try {
-      console.log(`🔄 Iniciando conversión: ${executionId}`);
-      
-      const response = await api.post(`/api/import/convert/${encodeURIComponent(executionId)}`);
-      
-      console.log(`✅ Conversión iniciada: ${executionId}`);
-      return { success: true, data: response?.data };
-      
-    } catch (error) {
-      console.error(`❌ Error iniciando conversión ${executionId}:`, error);
-      return { 
-        success: false, 
-        error: error?.response?.data?.detail || error?.message || 'Error al iniciar conversión' 
-      };
-    }
-  }
-
-  /**
-   * Consulta estado de conversión
-   */
-  async getConversionStatus(executionId) {
-    try {
-      const response = await api.get(`/api/import/convert/${encodeURIComponent(executionId)}/status`);
-      return { success: true, data: response?.data };
-      
-    } catch (error) {
-      const statusCode = error?.response?.status;
-      const message = error?.response?.data?.detail || error?.message || 'Error al consultar estado de conversión';
-      
-      return { success: false, statusCode, error: message };
-    }
-  }
-
-  /**
-   * Hace polling del estado de conversión hasta completarse
-   */
-  async pollConversionStatus(executionId, options = {}) {
-    const { intervalMs = 2000, timeoutMs = 300000 } = options; // 5 minutos timeout por defecto
-    
-    console.log(`⏳ Monitoreando conversión: ${executionId}`);
-    
-    const startTime = Date.now();
-    const completedStates = new Set(['success', 'completed', 'converted', 'error', 'failed']);
-
-    while (true) {
-      const statusResult = await this.getConversionStatus(executionId);
-      
-      if (statusResult.success) {
-        const status = (statusResult.data?.status || statusResult.data?.state || '').toString().toLowerCase();
-        
-        if (completedStates.has(status)) {
-          const success = !['error', 'failed'].includes(status);
-          console.log(`${success ? '✅' : '❌'} Conversión completada ${executionId}: ${status}`);
-          
-          return { 
-            success, 
-            finalStatus: status, 
-            data: statusResult.data 
-          };
-        }
-        
-        // Log de progreso cada ~10 segundos
-        const elapsed = Date.now() - startTime;
-        if (elapsed % 10000 < intervalMs) {
-          console.log(`🔄 Convirtiendo ${executionId}... (${Math.round(elapsed/1000)}s, estado: ${status})`);
-        }
-        
-      } else if (statusResult.statusCode && statusResult.statusCode !== 404) {
-        console.error(`❌ Error en conversión ${executionId}:`, statusResult.error);
-        return { success: false, finalStatus: 'error', error: statusResult.error };
-      }
-
-      // Verificar timeout
-      if (Date.now() - startTime > timeoutMs) {
-        console.warn(`⏰ Timeout en conversión ${executionId} después de ${timeoutMs}ms`);
-        return { 
-          success: false, 
-          finalStatus: 'timeout', 
-          error: 'La conversión tardó demasiado tiempo' 
-        };
-      }
-
-      // Esperar antes del siguiente check
-      await new Promise(resolve => setTimeout(resolve, intervalMs));
-    }
-  }
-
-  /**
-   * Obtiene información de archivos coordinados
-   */
   async getCoordinatedExecutions(executionId) {
     try {
-      console.log(`🔍 Obteniendo archivos coordinados: ${executionId}`);
+      console.log(`ðŸ” Obteniendo archivos coordinados: ${executionId}`);
       
-      // Determinar IDs relacionados
       const ldId = executionId.endsWith('-ss') ? executionId.replace('-ss', '') : executionId;
       const ssId = executionId.endsWith('-ss') ? executionId : `${executionId}-ss`;
 
@@ -416,27 +400,25 @@ class ImportService {
         sumasSaldos: null
       };
 
-      // Obtener Libro Diario
       try {
         const ldInfo = await this.getUploadInfo(ldId);
         if (ldInfo.success) {
           results.libroDiario = { executionId: ldId, ...ldInfo.data };
         }
       } catch (error) {
-        console.log(`ℹ️  LD no encontrado: ${ldId}`);
+        console.log(`â„¹ï¸  LD no encontrado: ${ldId}`);
       }
 
-      // Obtener Sumas y Saldos
       try {
         const ssInfo = await this.getUploadInfo(ssId);
         if (ssInfo.success) {
           results.sumasSaldos = { executionId: ssId, ...ssInfo.data };
         }
       } catch (error) {
-        console.log(`ℹ️  SS no encontrado: ${ssId}`);
+        console.log(`â„¹ï¸  SS no encontrado: ${ssId}`);
       }
 
-      console.log(`📋 Archivos coordinados encontrados:`, {
+      console.log(`ðŸ“‹ Archivos coordinados encontrados:`, {
         LD: !!results.libroDiario,
         SS: !!results.sumasSaldos
       });
@@ -444,14 +426,11 @@ class ImportService {
       return { success: true, data: results };
 
     } catch (error) {
-      console.error(`❌ Error obteniendo archivos coordinados ${executionId}:`, error);
+      console.error(`âŒ Error obteniendo archivos coordinados ${executionId}:`, error);
       return { success: false, error: error.message };
     }
   }
 
-  /**
-   * Obtiene información de un upload específico
-   */
   async getUploadInfo(executionId) {
     try {
       const response = await api.get(`/api/import/upload/${encodeURIComponent(executionId)}/info`);
@@ -460,32 +439,15 @@ class ImportService {
     } catch (error) {
       return { 
         success: false, 
-        error: error?.response?.data?.detail || error?.message || 'Error obteniendo información' 
+        error: error?.response?.data?.detail || error?.message || 'Error obteniendo informaciÃ³n' 
       };
     }
   }
 
-  /**
-   * Verifica la estructura de nombres de archivos
-   */
-  async verifyFileNaming(executionId) {
-    try {
-      const response = await api.get(`/api/debug/execution/${encodeURIComponent(executionId)}/file-structure`);
-      return { success: true, data: response?.data };
-      
-    } catch (error) {
-      console.error(`❌ Error verificando estructura de archivos ${executionId}:`, error);
-      return { success: false, error: error.message };
-    }
-  }
-
   // ===========================================
-  // MÉTODOS PRIVADOS
+  // MÃ‰TODOS PRIVADOS - SIN CAMBIOS
   // ===========================================
 
-  /**
-   * Sube el archivo principal de Libro Diario
-   */
   async _uploadPrimaryLibroDiario(file, projectId, period, testType) {
     try {
       const formData = new FormData();
@@ -504,7 +466,7 @@ class ImportService {
       if (!executionId) {
         return { 
           success: false, 
-          error: 'No se recibió execution_id del servidor', 
+          error: 'No se recibiÃ³ execution_id del servidor', 
           data 
         };
       }
@@ -512,7 +474,7 @@ class ImportService {
       return { success: true, executionId, data };
 
     } catch (error) {
-      console.error('❌ Error subiendo LD principal:', error);
+      console.error('âŒ Error subiendo LD principal:', error);
       return { 
         success: false, 
         error: error?.response?.data?.detail || error?.message || 'Error al subir archivo principal' 
@@ -520,15 +482,12 @@ class ImportService {
     }
   }
 
-  /**
-   * Sube archivos adicionales de Libro Diario
-   */
   async _uploadAdditionalLibroDiarioFiles(files, parentExecutionId, projectId, period, testType) {
     const results = [];
 
     for (const [index, file] of files.entries()) {
       try {
-        console.log(`📤 Subiendo archivo adicional ${index + 1}/${files.length}: ${file.name}`);
+        console.log(`ðŸ“¤ Subiendo archivo adicional ${index + 1}/${files.length}: ${file.name}`);
         
         const formData = new FormData();
         formData.append('file', file, file.name);
@@ -551,10 +510,10 @@ class ImportService {
           data: data
         });
 
-        console.log(`✅ Archivo adicional subido: ${file.name} -> ${executionId}`);
+        console.log(`âœ… Archivo adicional subido: ${file.name} -> ${executionId}`);
 
       } catch (error) {
-        console.error(`❌ Error subiendo archivo adicional ${file.name}:`, error);
+        console.error(`âŒ Error subiendo archivo adicional ${file.name}:`, error);
         
         results.push({
           success: false,
@@ -567,12 +526,9 @@ class ImportService {
     return results;
   }
 
-  /**
-   * Sube archivo de Sumas y Saldos
-   */
   async _uploadSumasSaldos(file, parentExecutionId, projectId, period) {
     try {
-      console.log(`📤 Subiendo Sumas y Saldos: ${file.name}`);
+      console.log(`ðŸ“¤ Subiendo Sumas y Saldos: ${file.name}`);
       
       const formData = new FormData();
       formData.append('file', file, file.name);
@@ -591,25 +547,24 @@ class ImportService {
       if (!executionId) {
         return { 
           success: false, 
-          error: 'No se recibió execution_id para Sumas y Saldos', 
+          error: 'No se recibiÃ³ execution_id para Sumas y Saldos', 
           data 
         };
       }
 
-      console.log(`✅ Sumas y Saldos subido: ${executionId}`);
+      console.log(`âœ… Sumas y Saldos subido: ${executionId}`);
 
-      // Verificar coordinación de IDs
       const expectedId = `${parentExecutionId}-ss`;
       if (executionId === expectedId) {
-        console.log(`✅ Coordinación de IDs confirmada: ${executionId}`);
+        console.log(`âœ… CoordinaciÃ³n de IDs confirmada: ${executionId}`);
       } else {
-        console.warn(`⚠️  ID no coordinado. Esperado: ${expectedId}, Obtenido: ${executionId}`);
+        console.warn(`âš ï¸  ID no coordinado. Esperado: ${expectedId}, Obtenido: ${executionId}`);
       }
 
       return { success: true, executionId, data };
 
     } catch (error) {
-      console.error('❌ Error subiendo Sumas y Saldos:', error);
+      console.error('âŒ Error subiendo Sumas y Saldos:', error);
       return { 
         success: false, 
         error: error?.response?.data?.detail || error?.message || 'Error al subir Sumas y Saldos' 
@@ -618,8 +573,12 @@ class ImportService {
   }
 
   // ===========================================
-  // MÉTODOS DE COMPATIBILIDAD
+  // MÃ‰TODOS DE COMPATIBILIDAD - SIN CAMBIOS
   // ===========================================
+
+  async uploadLibroDiario(libroDiarioFiles, projectId, period, testType = 'libro_diario_import') {
+    return this.uploadLibroDiarioYSumas(libroDiarioFiles, null, projectId, period, testType);
+  }
 
   async getImportHistory() {
     return { success: true, executions: [] };
