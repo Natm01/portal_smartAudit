@@ -8,6 +8,7 @@ from models.execution import ConversionResponse
 from services.execution_service import get_execution_service
 from services.conversion_service import get_conversion_service
 from utils.serialization import safe_json_response
+from routes.mapeo import run_mapeo_background
 
 router = APIRouter(prefix="/smau-proto/api/import", tags=["conversion"])
 

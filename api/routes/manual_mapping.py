@@ -15,7 +15,7 @@ from services.storage.azure_storage_service import get_azure_storage_service
 from config.settings import get_settings
 from utils.serialization import safe_json_response
 
-router = APIRouter()
+router = APIRouter(prefix="/smau-proto/api/import", tags=["mapeo"])
 
 # FIXED: Pydantic models with correct typing
 class FieldSuggestion(BaseModel):

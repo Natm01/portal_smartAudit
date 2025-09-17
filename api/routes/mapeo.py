@@ -10,8 +10,7 @@ from services.mapeo_service import get_mapeo_service
 from services.storage.azure_storage_service import get_azure_storage_service
 from utils.serialization import safe_json_response
 
-router = APIRouter()
-
+router = APIRouter(prefix="/smau-proto/api/import", tags=["mapeo"])
 
 async def run_mapeo_background(execution_id: str, erp_hint: Optional[str] = None):
     """Clean background task for running mapeo"""
@@ -398,3 +397,92 @@ async def get_mapeo_summary(execution_id: str):
             "status": "error",
             "error": str(e)
         }
+
+@router.get("/mapeo/{execution_id}/fields-mapping")
+async def get_fields_mapping_status(execution_id: str):
+    """Get detailed mapping status showing mapped fields and missing standard fields"""
+    execution_service = get_execution_service()
+    mapeo_service = get_mapeo_service()
+    
+    try:
+        execution = execution_service.get_execution(execution_id)
+        
+        if not hasattr(execution, 'mapeo_results') or not execution.mapeo_results:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Mapeo not completed yet"
+            )
+        
+        mapeo_results = execution.mapeo_results
+        user_decisions = mapeo_results.get('user_decisions', {})
+        mapeo_stats = mapeo_results.get('mapeo_stats', {})
+        
+        # Reutilizar campos estándar del servicio existente
+        standard_fields = mapeo_service.standard_fields
+        
+        # Analizar campos mapeados
+        mapped_fields = {}
+        mapped_field_types = set()
+        
+        for column_name, decision in user_decisions.items():
+            field_type = decision.get('field_type')
+            mapped_field_types.add(field_type)
+            mapped_fields[field_type] = {
+                'mapped_column': column_name,
+                'confidence': decision.get('confidence', 0.0),
+                'decision_type': decision.get('decision_type', 'unknown'),
+                'is_manual': 'manual' in decision.get('decision_type', '').lower()
+            }
+        
+        # Identificar campos faltantes
+        missing_fields = [field for field in standard_fields if field not in mapped_field_types]
+        
+        # Clasificar por criticidad (usando lógica similar a la existente)
+        critical_fields = {'journal_entry_id', 'amount', 'posting_date'}
+        missing_critical = [f for f in missing_fields if f in critical_fields]
+        
+        # Calcular completitud
+        completeness = len(mapped_field_types) / len(standard_fields) * 100
+        critical_completeness = len([f for f in critical_fields if f in mapped_field_types]) / len(critical_fields) * 100
+        
+        # Generar recomendaciones simples
+        recommendations = []
+        if missing_critical:
+            recommendations.append({
+                'type': 'critical',
+                'message': f'Faltan campos críticos: {", ".join(missing_critical)}',
+                'fields': missing_critical
+            })
+        
+        if mapeo_results.get('manual_mapping_required', False):
+            recommendations.append({
+                'type': 'manual_required',
+                'message': f'Se requiere mapeo manual para {mapeo_results.get("unmapped_fields_count", 0)} campos'
+            })
+        
+        response = {
+            "execution_id": execution_id,
+            "mapping_summary": {
+                "total_standard_fields": len(standard_fields),
+                "mapped_fields_count": len(mapped_field_types),
+                "missing_fields_count": len(missing_fields),
+                "completeness_percentage": round(completeness, 1),
+                "critical_completeness_percentage": round(critical_completeness, 1),
+                "needs_manual_mapping": mapeo_results.get('manual_mapping_required', False)
+            },
+            "mapped_fields": mapped_fields,
+            "missing_fields": missing_fields,
+            "critical_missing": missing_critical,
+            "recommendations": recommendations,
+            "mapeo_stats": mapeo_stats
+        }
+        
+        return safe_json_response(response)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error retrieving fields mapping status: {str(e)}"
+        )
