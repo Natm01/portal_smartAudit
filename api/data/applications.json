@@ -1,0 +1,34 @@
+{
+  "applications": [
+    {
+      "id": "importacion-libro-diario",
+      "name": "Importación Libro Diario",
+      "description": "Cargar y validar archivos contables de forma automática",
+      "icon": "document",
+      "route": "/libro-diario",
+      "permissionRequired": "canAccessLibroDiario",
+      "color": "#7C3AED",
+      "isActive": true
+    },
+    {
+      "id": "analisis-riesgos",
+      "name": "Análisis de Riesgos",
+      "description": "Evaluación y detección de riesgos contables",
+      "icon": "users",
+      "route": "/analisis-riesgos",
+      "permissionRequired": "canAccessAnalisisRiesgos",
+      "color": "#7C3AED",
+      "isActive": true
+    },
+    {
+      "id": "thoughtspot",
+      "name": "ThoughtSpot",
+      "description": "Visualización de datos y análisis interactivo",
+      "icon": "chart",
+      "route": "/thoughtspot",
+      "permissionRequired": "canAccessThoughtSpot",
+      "color": "#7C3AED",
+      "isActive": true
+    }
+  ]
+}

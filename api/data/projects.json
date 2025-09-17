@@ -1,0 +1,84 @@
+{
+  "projects": [
+    {
+      "id": "00038150",
+      "name": "38150 | OPERADOR INTEGRAL DE VEHICULOS, S.L.U. | 23-24",
+      "type": "Audit CCAA individuales obligatoria",
+      "client": "OPERADOR INTEGRAL DE VEHICULOS, S.L.U.",
+      "description": "Auditoría de cuentas anuales individuales obligatoria",
+      "status": "active",
+      "startDate": "2023-01-01",
+      "endDate": "2023-12-31"
+    },
+    {
+      "id": "00037942",
+      "name": "37942 | SUBARU ESPAÑA. S.A. | 23-24",
+      "type": "Audit CCAA individuales obligatoria",
+      "client": "SUBARU ESPAÑA. S.A.",
+      "description": "Auditoría de cuentas anuales individuales obligatoria",
+      "status": "active",
+      "startDate": "2023-01-01",
+      "endDate": "2022-12-31"
+    },
+    {
+      "id": "00038455",
+      "name": "38455 | HOTELES TURISTICOS UNIDOS, S.A. | 23-24",
+      "type": "Audit CCAA individuales obligatoria",
+      "client": "HOTELES TURISTICOS UNIDOS, S.A.",
+      "description": "Auditoría de cuentas anuales individuales obligatoria",
+      "status": "active",
+      "startDate": "2023-01-01",
+      "endDate": "2023-12-31"
+    },
+    {
+      "id": "00042910",
+      "name": "42910 | TRUXTON, S.L.| 23-24",
+      "type": "Audit CCAA consolidadas obligatoria",
+      "client": "TRUXTON, S.L.",
+      "description": "Auditoría de cuentas anuales consolidadas obligatoria",
+      "status": "active",
+      "startDate": "2024-01-01",
+      "endDate": "2024-12-31"
+    },
+    {
+      "id": "00042861",
+      "name": "42861 | TEYCOMUR MAQUINARIA, S.L.| 23-24",
+      "type": "Audit CCAA individuales obligatoria",
+      "client": "TEYCOMUR MAQUINARIA, S.L.",
+      "description": "Auditoría de cuentas anuales individuales obligatoria",
+      "status": "active",
+      "startDate": "2024-01-01",
+      "endDate": "2024-12-31"
+    },
+    {
+      "id": "00042845",
+      "name": "42845 | QUATRO ETIQUETAS, S.L.| 23-24",
+      "type": "Audit CCAA individuales obligatoria",
+      "client": "QUATRO ETIQUETAS, S.L.",
+      "description": "Auditoría de cuentas anuales individuales obligatoria",
+      "status": "active",
+      "startDate": "2024-01-01",
+      "endDate": "2024-12-31"
+    },
+    {
+      "id": "00042768",
+      "name": "42768 | BRICOGROUP INTEGRAL EUROPA, S.L.| 23-24",
+      "type": "Audit CCAA individuales voluntaria",
+      "client": "BRICOGROUP INTEGRAL EUROPA, S.L.",
+      "description": "Auditoría de cuentas anuales individuales voluntaria",
+      "status": "active",
+      "startDate": "2024-01-01",
+      "endDate": "2024-12-31"
+    },
+    {
+      "id": "00042486",
+      "name": "42486 | SOCIEDAD TITULAR DEL PUERTO DEPORTIVO DE ADRA, S.L.| 23-24",
+      "type": "Audit CCAA individuales obligatoria",
+      "client": "SOCIEDAD TITULAR DEL PUERTO DEPORTIVO DE ADRA, S.L.",
+      "description": "Auditoría de cuentas anuales individuales obligatoria",
+      "status": "active",
+      "startDate": "2024-01-01",
+      "endDate": "2024-12-31"
+    }
+  ]
+}

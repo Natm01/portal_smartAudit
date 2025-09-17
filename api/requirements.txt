@@ -1,0 +1,84 @@
+# FastAPI y servidor
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+pydantic-settings>=2,<3
+python-multipart==0.0.6
+
+# Dependencias de producción
+gunicorn==21.2.0
+
+# Utilidades
+python-dateutil==2.8.2
+pytz==2023.3
+
+# Testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+httpx==0.25.2
+
+# Azure integrations (comentadas hasta que sean necesarias)
+# azure-identity==1.15.0
+# azure-keyvault-secrets==4.7.0
+# azure-storage-blob==12.19.0
+azure-common==1.1.28
+azure-core==1.35.0
+azure-datalake-store==0.0.53
+azure-identity==1.24.0
+azure-mgmt-core==1.6.0
+azure-mgmt-storage==23.0.1
+azure-storage-blob==12.26.0
+
+# Logging y monitoring
+structlog==23.2.0
+
+# Security
+passlib[bcrypt]==1.7.4
+python-jose[cryptography]==3.3.0
+
+# Data processing (ahora con Python 3.11 podemos usar versiones recientes)
+pandas==2.1.4
+numpy==1.26.4
+# polars==0.20.2
+
+# File Processing
+# chardet==5.2.0
+# openpyxl==3.1.2
+
+# HTTP y Async
+# requests==2.31.0
+# httpx==0.25.2
+# aiofiles==23.2.1
+
+# Configuration
+# python-dotenv==1.0.0
+# python-dateutil==2.8.2
+
+# Security
+# cryptography==42.0.0
+
+# Database
+# pyodbc==5.0.1
+
+# Validation
+# jsonschema==4.20.0
+# email-validator==2.1.0.post1
+# marshmallow==3.20.2
+
+# Logging
+# structlog==23.2.0
+
+# Performance
+# cachetools==5.3.2
+
+# JSON Processing
+# orjson==3.9.10
+
+# Compression
+# zstandard==0.22.0
+
+# Monitoring
+# psutil==5.9.6
+
+# Utilities
+# click==8.1.7
