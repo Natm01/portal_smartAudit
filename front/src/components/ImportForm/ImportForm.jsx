@@ -1,4 +1,4 @@
-// frontend/src/components/ImportForm/ImportForm.jsx
+// frontend/src/components/ImportForm/ImportForm.jsx - Estandarizado con tamaños originales
 import React, { useState } from 'react';
 
 const ImportForm = ({ projects, onSubmit, loading }) => {

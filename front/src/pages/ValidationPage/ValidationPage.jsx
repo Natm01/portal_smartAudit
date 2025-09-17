@@ -1,4 +1,4 @@
-// frontend/src/pages/ValidationPage/ValidationPage.jsx - SOLO LOS CAMBIOS SOLICITADOS
+// frontend/src/pages/ValidationPage/ValidationPage.jsx - Estandarizado con tamaños originales
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Header from '../../components/Header/Header';
@@ -11,7 +11,7 @@ import importService from '../../services/importService';
 const ValidationPage = () => {
   const { executionId } = useParams();
   const navigate = useNavigate();
-  const processStartedRef = useRef(false); // ÚNICO CAMBIO: Prevenir múltiples ejecuciones
+  const processStartedRef = useRef(false);
   
   // Estados principales
   const [user, setUser] = useState(null);
@@ -21,7 +21,7 @@ const ValidationPage = () => {
   
   // Estados del proceso
   const [processState, setProcessState] = useState({
-    step: 'starting', // starting, validating, converting, completed, error
+    step: 'starting',
     libroDiario: {
       validated: false,
       validationError: null,
@@ -35,10 +35,6 @@ const ValidationPage = () => {
   });
   
   const [statusModal, setStatusModal] = useState({ open: false, title: '', subtitle: '', status: 'info' });
-
-  // ===========================================
-  // EFECTOS Y CARGA INICIAL
-  // ===========================================
 
   useEffect(() => {
     loadInitialData();
@@ -63,7 +59,7 @@ const ValidationPage = () => {
         libroDiarioFile: 'BSEG.txt + BKPF.txt',
       });
 
-      // CAMBIO: Iniciar proceso SOLO UNA VEZ
+      // Iniciar proceso SOLO UNA VEZ
       if (!processStartedRef.current) {
         processStartedRef.current = true;
         await startValidationAndConversionProcess();
@@ -77,13 +73,8 @@ const ValidationPage = () => {
     }
   };
 
-  // ===========================================
-  // PROCESO PRINCIPAL
-  // ===========================================
-
   const startValidationAndConversionProcess = async () => {
     try {
-      // CAMBIO: Mostrar modal de conversión inicial
       setStatusModal({
         open: true,
         title: 'Convirtiendo archivo...',
@@ -97,7 +88,6 @@ const ValidationPage = () => {
       const result = await importService.validateCoordinatedFiles(executionId);
 
       if (result.success) {
-        // Proceso exitoso
         setProcessState({
           step: 'completed',
           libroDiario: {
@@ -112,7 +102,6 @@ const ValidationPage = () => {
           }
         });
 
-        // Determinar mensaje de éxito
         const hasLD = result.results.libroDiario.attempted;
         const hasSS = result.results.sumasSaldos.attempted;
         
@@ -131,7 +120,6 @@ const ValidationPage = () => {
         });
 
       } else {
-        // Proceso falló
         setProcessState(prev => ({
           ...prev,
           step: 'error',
@@ -164,31 +152,23 @@ const ValidationPage = () => {
     }
   };
 
-  // ===========================================
-  // HANDLERS
-  // ===========================================
-
   const handleUserChange = async (newUser) => {
-    setUser(newUser);
-    showUserChangeNotification(newUser.name);
-  };
-
-  const showUserChangeNotification = (userName) => {
-    const notification = document.createElement('div');
-    notification.className = 'fixed top-4 right-4 bg-purple-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
-    notification.innerHTML = `
-      <div class="flex items-center space-x-2">
+    try {
+      setUser(newUser);
+      const notification = document.createElement('div');
+      notification.className = 'fixed top-4 right-4 bg-purple-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 transform transition-all duration-300';
+      notification.innerHTML = `<div class="flex items-center space-x-2">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-        </svg>
-        <span>Cambiado a ${userName}</span>
-      </div>
-    `;
-    document.body.appendChild(notification);
-    setTimeout(() => {
-      notification.style.transform = 'translateX(100%)';
-      setTimeout(() => document.body.contains(notification) && document.body.removeChild(notification), 300);
-    }, 3000);
+        </svg><span>Cambiado a ${newUser.name}</span></div>`;
+      document.body.appendChild(notification);
+      setTimeout(() => {
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => document.body.contains(notification) && document.body.removeChild(notification), 300);
+      }, 3000);
+    } catch (err) {
+      console.error('Error changing user:', err);
+    }
   };
 
   const handleProceedToResults = () => {
@@ -200,10 +180,6 @@ const ValidationPage = () => {
       navigate(`/libro-diario/results/${executionId}`);
     }
   };
-
-  // ===========================================
-  // HELPERS
-  // ===========================================
 
   const getProcessStatus = () => {
     switch (processState.step) {
@@ -233,7 +209,7 @@ const ValidationPage = () => {
   };
 
   const getStepStatus = (stepNumber) => {
-    if (stepNumber === 1) return 'completed'; // Importación siempre completada
+    if (stepNumber === 1) return 'completed';
     if (stepNumber === 2) {
       return processState.step === 'completed' ? 'completed' : 'active';
     }
@@ -243,18 +219,14 @@ const ValidationPage = () => {
     return 'pending';
   };
 
-  // ===========================================
-  // RENDER - SIN CAMBIOS VISUALES
-  // ===========================================
-
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col">
-        <Header user={user} onUserChange={handleUserChange} />
-        <main className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <div className="inline-block animate-spin rounded-full h-10 w-10 border-4 border-gray-200 border-t-purple-600 mb-4"></div>
-            <p className="text-gray-600">Cargando proceso...</p>
+      <div className="min-h-screen bg-gray-50">
+        <Header user={user} onUserChange={handleUserChange} showUserSelector={true} />
+        <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-300 border-t-purple-600"></div>
+            <span className="ml-4 text-lg text-gray-600">Cargando proceso...</span>
           </div>
         </main>
       </div>
@@ -263,19 +235,21 @@ const ValidationPage = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col">
-        <Header user={user} onUserChange={handleUserChange} />
-        <main className="flex-1 flex items-center justify-center p-4">
-          <div className="max-w-md w-full bg-white rounded-xl shadow-sm p-8 text-center border border-red-100">
-            <div className="text-6xl mb-4">⚠️</div>
-            <h2 className="text-xl font-semibold text-red-600 mb-2">Error al cargar resultados</h2>
-            <p className="text-gray-600 mb-6">{error}</p>
-            <button 
-              onClick={() => window.location.reload()} 
-              className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700"
-            >
-              Reintentar
-            </button>
+      <div className="min-h-screen bg-gray-50">
+        <Header user={user} onUserChange={handleUserChange} showUserSelector={true} />
+        <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-center py-12">
+            <div className="max-w-md w-full bg-white rounded-xl shadow-sm p-8 text-center border border-red-100">
+              <div className="text-6xl mb-4">⚠️</div>
+              <h2 className="text-xl font-semibold text-red-600 mb-2">Error al cargar resultados</h2>
+              <p className="text-gray-600 mb-6">{error}</p>
+              <button 
+                onClick={() => window.location.reload()} 
+                className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700"
+              >
+                Reintentar
+              </button>
+            </div>
           </div>
         </main>
       </div>
@@ -285,35 +259,36 @@ const ValidationPage = () => {
   const processStatus = getProcessStatus();
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <Header user={user} onUserChange={handleUserChange} />
+    <div className="min-h-screen bg-gray-50">
+      <Header user={user} onUserChange={handleUserChange} showUserSelector={true} />
       
-      <main className="flex-1">
-        <div className="max-w-full mx-auto px-6 sm:px-8 lg:px-12 xl:px-16 py-8 space-y-6">
+      <main className="flex-1 [&_*]:text-xs [&_h1]:text-lg [&_h2]:text-base [&_h3]:text-sm">
+        <div className="space-y-6 max-w-full mx-auto px-6 sm:px-8 lg:px-12 xl:px-16 py-8">
           
           {/* Breadcrumb */}
           <nav className="flex" aria-label="Breadcrumb">
             <ol className="flex items-center space-x-4">
               <li>
-                <a href="/" className="text-gray-400 hover:text-gray-500">
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
-                  </svg>
-                </a>
-              </li>
-              <li>
-                <div className="flex items-center">
-                  <svg className="w-4 h-4 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd"></path>
-                  </svg>
-                  <a href="/libro-diario" className="ml-4 text-sm font-medium text-gray-500 hover:text-gray-700">
-                    Importación Libro Diario
+                <div>
+                  <a href="/" className="text-gray-400 hover:text-gray-500" title="Inicio">
+                    <svg className="flex-shrink-0 w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
+                    </svg>
+                    <span className="sr-only">Inicio</span>
                   </a>
                 </div>
               </li>
               <li>
                 <div className="flex items-center">
-                  <svg className="w-4 h-4 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="flex-shrink-0 w-4 h-4 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd"></path>
+                  </svg>
+                  <a href="/libro-diario" className="ml-4 text-sm font-medium text-gray-500 hover:text-gray-700">Importación Libro Diario</a>
+                </div>
+              </li>
+              <li>
+                <div className="flex items-center">
+                  <svg className="flex-shrink-0 w-4 h-4 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd"></path>
                   </svg>
                   <span className="ml-4 text-sm font-medium text-gray-500">Validación</span>
@@ -324,13 +299,13 @@ const ValidationPage = () => {
 
           {/* Header */}
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Validación</h1>
-            <p className="text-gray-600">
+            <h1 className="text-2xl font-bold text-gray-900">Validación de Archivos Contables</h1>
+            <p className="mt-2 text-sm text-gray-600">
               Proyecto: {executionData?.projectName} • Período: {executionData?.period}
             </p>
           </div>
 
-          {/* Steps Progress */}
+          {/* Steps */}
           <div className="p-6">
             <div className="flex items-center justify-center">
               <div className="flex items-center text-green-600">
@@ -369,12 +344,12 @@ const ValidationPage = () => {
           </div>
 
           {/* Status Card */}
-          <div className={`p-4 rounded-lg border ${
+          <div className={`px-4 py-3 rounded border ${
             processStatus.status === 'success' 
-              ? 'bg-green-50 border-green-200' 
+              ? 'bg-green-50 border-green-200 text-green-700' 
               : processStatus.status === 'error'
-              ? 'bg-red-50 border-red-200'
-              : 'bg-blue-50 border-blue-200'
+              ? 'bg-red-50 border-red-200 text-red-700'
+              : 'bg-blue-50 border-blue-200 text-blue-700'
           }`}>
             <div className="flex items-center">
               <div className="flex-shrink-0">
@@ -396,34 +371,29 @@ const ValidationPage = () => {
                 )}
               </div>
               <div className="ml-3">
-                <p className={`text-sm font-medium ${
-                  processStatus.status === 'success' ? 'text-green-800' :
-                  processStatus.status === 'error' ? 'text-red-800' : 'text-blue-800'
-                }`}>
-                  {processStatus.message}
-                </p>
+                <span className="block sm:inline">{processStatus.message}</span>
               </div>
             </div>
           </div>
 
-          {/* Validation Phases Component - SIN CAMBIOS */}
-          <ValidationPhases 
-            fileType="libro_diario" 
-            onComplete={() => {}}
-          />
-
-          {/* File Preview - SIN CAMBIOS */}
+          {/* Contenido */}
           {executionData && (
-            <FilePreview 
-              file={executionData.libroDiarioFile} 
-              fileType="libro_diario" 
-              executionId={executionId} 
-              maxRows={25} 
-            />
+            <div className="space-y-6">
+              <ValidationPhases 
+                fileType="libro_diario" 
+                onComplete={() => {}}
+              />
+              <FilePreview 
+                file={executionData.libroDiarioFile} 
+                fileType="libro_diario" 
+                executionId={executionId} 
+                maxRows={25} 
+              />
+            </div>
           )}
 
-          {/* Navigation */}
-          <div className="flex justify-between items-center pt-6 border-t border-gray-200">
+          {/* Navegación inferior */}
+          <div className="flex justify-between items-center mt-8 pt-8 border-t border-gray-200">
             <button 
               onClick={() => navigate('/libro-diario')} 
               className="flex items-center px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors"
@@ -440,7 +410,7 @@ const ValidationPage = () => {
               className={`flex items-center px-6 py-2 rounded-lg transition-colors ${
                 canProceedToResults()
                   ? 'bg-purple-600 text-white hover:bg-purple-700'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'disabled:opacity-50 disabled:cursor-not-allowed bg-purple-600 text-white'
               }`}
             >
               Continuar a Resultados
@@ -453,7 +423,7 @@ const ValidationPage = () => {
         </div>
       </main>
 
-      {/* Status Modal */}
+      {/* Modal de estado de validación */}
       <StatusModal
         isOpen={statusModal.open}
         title={statusModal.title}

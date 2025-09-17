@@ -1,4 +1,4 @@
-// frontend/src/pages/ImportPage/ImportPage.jsx
+// frontend/src/pages/ImportPage/ImportPage.jsx - Estandarizado con tamaños originales
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../../components/Header/Header';
@@ -162,12 +162,12 @@ const ImportPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col">
-        <Header user={user} onUserChange={handleUserChange} />
-        <main className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <div className="inline-block animate-spin rounded-full h-10 w-10 border-4 border-gray-200 border-t-purple-600 mb-4"></div>
-            <p className="text-gray-600">Cargando información...</p>
+      <div className="min-h-screen bg-gray-50">
+        <Header user={user} onUserChange={handleUserChange} showUserSelector={true} />
+        <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-300 border-t-purple-600"></div>
+            <span className="ml-4 text-lg text-gray-600">Cargando información...</span>
           </div>
         </main>
       </div>
@@ -175,30 +175,39 @@ const ImportPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <Header user={user} onUserChange={handleUserChange} />
-      <main className="flex-1">
-        <div className="max-w-full mx-auto px-6 sm:px-8 lg:px-12 xl:px-16 py-8">
+    <div className="min-h-screen bg-gray-50">
+      <Header user={user} onUserChange={handleUserChange} showUserSelector={true} />
+      
+      <main className="flex-1 [&_*]:text-xs [&_h1]:text-lg [&_h2]:text-base [&_h3]:text-sm">
+        <div className="space-y-6 max-w-full mx-auto px-6 sm:px-8 lg:px-12 xl:px-16 py-8">
           {/* Breadcrumb */}
-          <nav className="flex mb-4" aria-label="Breadcrumb">
+          <nav className="flex" aria-label="Breadcrumb">
             <ol className="flex items-center space-x-4">
               <li>
-                <a href="/" className="text-gray-400 hover:text-gray-500" title="Inicio">
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" /></svg>
-                  <span className="sr-only">Inicio</span>
-                </a>
+                <div>
+                  <a href="/" className="text-gray-400 hover:text-gray-500" title="Inicio">
+                    <svg className="flex-shrink-0 w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
+                    </svg>
+                    <span className="sr-only">Inicio</span>
+                  </a>
+                </div>
               </li>
-              <li className="flex items-center">
-                <svg className="w-4 h-4 text-gray-300" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" /></svg>
-                <a href="/libro-diario" className="ml-4 text-sm font-medium text-gray-500 hover:text-gray-700">Importación Libro Diario</a>
+              <li>
+                <div className="flex items-center">
+                  <svg className="flex-shrink-0 w-4 h-4 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd"></path>
+                  </svg>
+                  <a href="/libro-diario" className="ml-4 text-sm font-medium text-gray-500 hover:text-gray-700">Importación Libro Diario</a>
+                </div>
               </li>
             </ol>
           </nav>
 
-          {/* Título de página + subtítulo (como en tu captura) */}
-          <div className="mb-6">
-            <h1 className="text-2xl font-semibold text-gray-900">Importación Libro Diario</h1>
-            <p className="mt-1 text-sm text-gray-500">Carga y valida tus archivos contables de forma automática</p>
+          {/* Header */}
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Importación Libro Diario</h1>
+            <p className="mt-2 text-sm text-gray-600">Carga y valida tus archivos contables de forma automática</p>
           </div>
 
           {/* Steps */}
@@ -221,16 +230,14 @@ const ImportPage = () => {
             </div>
           </div>
 
+          {/* Error */}
           {error && (
-            <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
-              <div className="flex">
-                <svg className="w-5 h-5 text-red-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11V5a1 1 0 10-2 0v2a1 1 0 001 1h1a1 1 0 010 2h-1a3 3 0 100 6h1a1 1 0 110 2h-1a5 5 0 110-10h1z" clipRule="evenodd" /></svg>
-                <span className="ml-2 text-sm text-red-700">{error}</span>
-              </div>
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative">
+              <span className="block sm:inline">{error}</span>
             </div>
           )}
 
-          {/* Apilado: Formulario y debajo Historial */}
+          {/* Contenido */}
           <div className="space-y-6">
             <ImportForm projects={projects} onSubmit={handleImportSubmit} loading={false} />
             <ImportHistory executions={importHistory} onItemClick={handleHistoryItemClick} loading={false} />
